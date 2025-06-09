@@ -1,0 +1,247 @@
+name: Banking ML Platform CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: banking-ml-platform
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 black isort
+
+    - name: Code formatting check
+      run: |
+        black --check --diff .
+        isort --check-only --diff .
+
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
+    - name: Create test data directories
+      run: |
+        mkdir -p data/raw data/processed models docs/figures docs/metrics
+
+    - name: Download test data
+      run: |
+        python data_pipeline/download_data.py
+
+    - name: Run preprocessing
+      run: |
+        python data_pipeline/preprocess.py
+
+    - name: Train models
+      run: |
+        python models/fraud_training.py
+        python models/credit_risk_training.py
+
+    - name: Evaluate models
+      run: |
+        python models/evaluate_fraud.py
+        python models/evaluate_credit_risk.py
+
+    - name: Test with pytest
+      run: |
+        pytest tests/ --maxfail=1 -q --tb=short --cov=. --cov-report=xml
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  integration-test:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -f deploy/Dockerfile -t banking-ml-platform:test .
+
+    - name: Start test environment
+      run: |
+        docker-compose -f deploy/docker-compose.yml up -d --build
+        sleep 60  # Wait for services to start
+
+    - name: Run integration tests
+      run: |
+        chmod +x tests/integration_test.sh
+        ./tests/integration_test.sh
+
+    - name: Collect logs on failure
+      if: failure()
+      run: |
+        docker-compose -f deploy/docker-compose.yml logs > integration-logs.txt
+
+    - name: Upload logs artifact
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-logs
+        path: integration-logs.txt
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker-compose -f deploy/docker-compose.yml down -v
+
+  build-and-push:
+    needs: [test, integration-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: deploy/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment"
+        # Add staging deployment commands here
+        # This could include:
+        # - Updating Kubernetes manifests
+        # - Deploying to cloud provider
+        # - Running smoke tests
+
+  deploy-production:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v3.12.14
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+        heroku_email: ${{ secrets.HEROKU_EMAIL }}
+        usedocker: true
+        docker_heroku_process_type: web
+        docker_build_args: |
+          PORT
+
+    - name: Health check
+      run: |
+        sleep 30
+        curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || exit 1
+
+    - name: Notify deployment
+      if: success()
+      run: |
+        echo "Successfully deployed to production"
+        # Add notification logic (Slack, email, etc.)
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Safety check for Python dependencies
+      run: |
+        pip install safety
+        safety check --json --output safety-results.json || true
+
+    - name: Upload safety results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan-results
+        path: |
+          trivy-results.sarif
+          safety-results.json

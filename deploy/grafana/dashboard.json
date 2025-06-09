@@ -1,0 +1,253 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Banking ML Platform Dashboard",
+    "tags": ["banking", "ml", "fraud-detection"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Fraud Detection Requests",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(fraud_requests_total)",
+            "legendFormat": "Total Requests"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1000},
+                {"color": "red", "value": 5000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Credit Risk Requests",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(credit_requests_total)",
+            "legendFormat": "Total Requests"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 500},
+                {"color": "red", "value": 2000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(error_rate_total[5m]))",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 0.1},
+                {"color": "red", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Request Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(fraud_requests_total[5m]))",
+            "legendFormat": "Fraud Requests/sec"
+          },
+          {
+            "expr": "sum(rate(credit_requests_total[5m]))",
+            "legendFormat": "Credit Requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {
+                "mode": "none",
+                "group": "A"
+              },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Fraud Request Latency",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(fraud_request_latency_seconds_bucket[5m])) by (le))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(fraud_request_latency_seconds_bucket[5m])) by (le))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(fraud_request_latency_seconds_bucket[5m])) by (le))",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Credit Risk Latency",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(credit_request_latency_seconds_bucket[5m])) by (le))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(credit_request_latency_seconds_bucket[5m])) by (le))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "System Health",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "up",
+            "legendFormat": "{{job}}",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "text": "DOWN",
+                    "color": "red"
+                  },
+                  "1": {
+                    "text": "UP",
+                    "color": "green"
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Annotations & Alerts",
+          "datasource": "-- Grafana --",
+          "type": "dashboard",
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "enable": true,
+          "hide": true
+        }
+      ]
+    },
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 0,
+    "links": [],
+    "panels": [],
+    "schemaVersion": 27,
+    "version": 0,
+    "weekStart": ""
+  }
+}

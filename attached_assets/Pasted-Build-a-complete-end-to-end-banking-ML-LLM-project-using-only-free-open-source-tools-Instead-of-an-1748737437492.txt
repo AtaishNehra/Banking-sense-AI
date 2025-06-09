@@ -1,0 +1,157 @@
+Build a complete end-to-end banking ML+LLM project using only free, open-source tools. Instead of an uploaded file, first download the PaySim dataset from GitHub:
+
+1. Download data/raw/PS_20174392719_1491204439457_log.csv
+   • In data_pipeline/download_data.py, fetch 
+     https://raw.githubusercontent.com/fernandol/paysim/master/data/PS_20174392719_1491204439457_log.csv 
+     via requests and save it as data/raw/PS_20174392719_1491204439457_log.csv.
+   • After saving, proceed as if that CSV were “attached.”
+
+2. Project Layout & Environment
+   • Create:
+     banking-app/
+       data/
+         raw/
+           PS_20174392719_1491204439457_log.csv   # (fetched above)
+         processed/
+       data_pipeline/
+       models/
+       services/
+         chatbot_service/
+         doc_processor/
+       api/
+       deploy/
+       tests/
+       notebooks/
+       .github/workflows/
+       docs/
+       LICENSE
+       README.md
+       requirements.txt
+   • Use Python 3.11. List all pip packages in requirements.txt.
+   • In deploy/Dockerfile: use python:3.11-slim ⟶ install requirements.txt ⟶ copy .env.example→.env ⟶ expose port 8000.
+   • In deploy/docker-compose.yml: orchestrate:
+     – app (FastAPI backend)
+     – prometheus (metrics)
+     – elk (Elasticsearch+Logstash+Kibana)
+
+3. Data Ingestion & Preprocessing
+   • In data_pipeline/:
+     – download_data.py: fetch the raw CSV (see step 1).
+     – preprocess.py: load data/raw/PS_20174392719_1491204439457_log.csv with pandas.
+       • Use Great Expectations to check for missing “amount”, “type”, “isFraud” columns; log anomalies.
+       • Clean nulls, one-hot encode “type”, normalize “amount” (StandardScaler), extract “hour”/“day” from “step” or “timestamp” if available.
+       • Save processed file as data/processed/transactions_processed.csv.
+   • Add notebooks/eda_and_preprocessing.ipynb to show:
+     – Histogram of “amount”
+     – Fraud vs. legit class imbalance bar chart
+     – Correlation heatmap of key features
+
+4. Machine Learning on the Downloaded CSV
+   • Fraud Detection
+     – models/fraud_training.py:
+       1. Load data/processed/transactions_processed.csv.
+       2. Split into 70% train / 15% val / 15% test (stratify on isFraud).
+       3. Train an XGBoost classifier with a “rolling count” feature: for each row, count transactions by same “nameOrig” in past 24 steps.
+       4. Use Optuna to tune “max_depth” and “learning_rate” on validation.
+       5. Save best model to models/fraud_model.pkl.
+     – models/evaluate_fraud.py:
+       1. Load test set, run inference, compute “precision”, “recall”, “F1”, “AUC‑ROC”.
+       2. Save confusion matrix to docs/figures/fraud_confusion_matrix.png.
+       3. Write metrics JSON to docs/metrics/fraud_metrics.json.
+     – tests/test_fraud.py:
+       • Verify fraud_training.py executes end‑to‑end.
+       • Verify evaluate_fraud.py returns a dict with keys “precision”, “recall”, “f1”, “auc”.
+
+   • Credit Risk Scoring (Synthetic Label)
+     – models/credit_risk_training.py:
+       1. Load data/processed/transactions_processed.csv.
+       2. Derive a “credit_risk” label: if a customer (“nameOrig”) has average daily “amount” in top 25th percentile AND >10 transactions/day → high risk (1), else low risk (0).
+       3. Train a Scikit‑Learn GradientBoostingClassifier on these labels.
+       4. Save model as models/credit_risk_model.pkl.
+     – models/evaluate_credit_risk.py:
+       1. Load held‑out test split, compute “AUC‑ROC”, “log loss”, and “calibration error”.
+       2. Save ROC curve to docs/figures/credit_roc_curve.png and calibration plot to docs/figures/credit_calibration.png.
+       3. Write metrics JSON to docs/metrics/credit_metrics.json.
+     – tests/test_credit_risk.py:
+       • Confirm credit_risk_training.py runs without error.
+       • Check predictions are between 0 and 1; confirm SHAP values sum to output.
+
+5. LLM‑Powered Services (Free Open‑Source Models)
+   • Use Hugging Face Transformers with Mistral 7B or Llama 3 (8B).
+   • services/chatbot_service/:
+     – Create FastAPI app that loads chosen LLM and tokenizer.
+     – Expose POST /chat: accepts JSON { "user_id": "<str>", "message": "<str>" } → LLM response. 
+       • Keep per‑user conversation history in a Python dict.
+     – Implement OAuth2 password flow with two hardcoded users (“analyst”, “manager”).
+     – requirements.txt lists fastapi, uvicorn, transformers, torch.
+     – tests/test_chatbot.py: mock LLM to echo input; assert returned JSON has key “response”.
+
+   • services/doc_processor/:
+     – summarizer.py:
+       • Use pdfplumber & python‑docx to extract text from uploaded PDF/DOCX.
+       • Use pipeline("summarization") to summarize.
+       • For compliance: prompt “Extract AML covenants from text” and return a JSON list of clauses.
+       • Save outputs to data/processed/summaries/ and examples to docs/sample_outputs/.
+     – Expose POST /summarize: file upload → { "summary": "<str>", "key_clauses": ["<str>", …] }.
+     – tests/test_doc_processor.py: upload a tiny sample PDF; assert “summary” is nonempty.
+
+6. API Endpoints & Integration
+   • api/main.py:
+     – POST /predict/fraud → load models/fraud_model.pkl, take JSON transaction features, return { "is_fraud": 0/1, "probability": <float> }.
+     – POST /predict/credit_risk → load models/credit_risk_model.pkl, take customer features, return { "risk_score": <float>, "shap_values": <dict> }.
+     – POST /chat → proxy to services/chatbot_service/chat.
+     – POST /summarize → proxy to services/doc_processor/summarize.
+   • Enable Swagger UI. Add docs/api_usage.md with curl examples.
+
+7. DevOps, CI/CD & Testing
+   • .github/workflows/ci_cd.yml:
+     – On push: pip install -r requirements.txt, pytest --maxfail=1 -q, flake8.
+     – On merge: build Docker image username/banking-app:latest → push to Docker Hub.
+     – After merge: deploy to free Heroku Container Registry; include Procfile:
+         web: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+   • tests/ contains:
+     – test_fraud.py, test_credit_risk.py, test_chatbot.py, test_doc_processor.py.
+     – integration_test.sh:
+         1. docker-compose up -d
+         2. curl --retry to health‑check app
+         3. Call /predict/fraud, /predict/credit_risk, /chat, /summarize; assert HTTP 200 + correct JSON.
+
+8. Metrics & Reporting (Using Paid CSV)
+   • After training, compute:
+     – Fraud Model: precision, recall, F1, AUC‑ROC on test set.
+     – Credit Risk: AUC‑ROC, log loss, calibration error.
+   • Save metrics JSON to docs/metrics/fraud_metrics.json and docs/metrics/credit_metrics.json.
+   • Save plots:
+     – docs/figures/fraud_confusion_matrix.png
+     – docs/figures/fraud_roc_curve.png
+     – docs/figures/credit_roc_curve.png
+     – docs/figures/credit_calibration.png
+
+9. README & Documentation
+   • README.md:
+     1. Project overview + ASCII/Mermaid diagram.
+     2. Setup: git clone → pip install Docker+Compose → cp .env.example .env → docker-compose up --build.
+     3. Run tests: pytest and sh tests/integration_test.sh; view coverage.xml.
+     4. API usage: curl examples for all endpoints.
+     5. **Model Performance**: automatically insert numbers from docs/metrics/*.json. For example:
+        “Fraud Model → precision=0.89, recall=0.75, F1=0.81, AUC‑ROC=0.93.  
+         Credit Risk Model → AUC‑ROC=0.87, log loss=0.34, calibration error=0.12.”
+     6. How to extend adding new models or LLM tasks.
+   • Add CONTRIBUTORS.md and an MIT LICENSE.
+
+10. Monitoring & Logging
+    • Instrument FastAPI + ML code with prometheus_client to expose /metrics on port 8001 (track request counts, latencies, error rates).
+    • deploy/elk/filebeat.yml: forward JSON logs from app container to Elasticsearch.
+    • deploy/grafana/dashboard.json: include metrics for:
+      – fraud_requests_total
+      – fraud_request_latency_seconds
+      – credit_requests_total
+      – error_rate
+
+11. Sample Data & Sanity Checks
+    • Only use data/raw/PS_20174392719_1491204439457_log.csv (downloaded). No external datasets.
+    • Add data/raw/sample_small.csv (first 20 rows of transactions.csv) for fast local tests.
+    • Tests must cover data loading, preprocessing, inference, API endpoints.
+    • Integration tests must verify end-to-end functionality on the downloaded CSV.
+
+After generating all files, show a top‑level folder tree in README.md. Ensure the downloaded CSV is used exclusively for training/testing, and include computed metrics in the README’s “Model Performance” section.

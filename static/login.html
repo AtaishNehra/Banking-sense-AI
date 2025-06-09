@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking ML Platform - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 bg-blue-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-university text-white text-2xl"></i>
+                </div>
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Banking ML Platform</h2>
+                <p class="mt-2 text-sm text-gray-600">Sign in to your account or create a new one</p>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex justify-center">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button id="loginTab" class="px-6 py-2 text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm">
+                        Sign In
+                    </button>
+                    <button id="registerTab" class="px-6 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700">
+                        Create Account
+                    </button>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="bg-white rounded-lg shadow-md p-8">
+                <form id="loginFormSubmit" class="space-y-6">
+                    <div>
+                        <label for="loginCustomerId" class="block text-sm font-medium text-gray-700">Customer ID</label>
+                        <input id="loginCustomerId" name="customer_id" type="text" required
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               placeholder="Enter your customer ID">
+                    </div>
+                    
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input id="loginPassword" name="password" type="password" required
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               placeholder="Enter your password">
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <button type="button" id="forgotPasswordBtn" class="text-sm text-blue-600 hover:text-blue-500">
+                            Forgot your password?
+                        </button>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Registration Form -->
+            <div id="registerForm" class="bg-white rounded-lg shadow-md p-8 hidden">
+                <form id="registerFormSubmit" class="space-y-6">
+                    <div>
+                        <label for="registerCustomerId" class="block text-sm font-medium text-gray-700">Customer ID</label>
+                        <input id="registerCustomerId" name="customer_id" type="text" required
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               placeholder="Choose a unique customer ID">
+                    </div>
+                    
+                    <div>
+                        <label for="registerPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input id="registerPassword" name="password" type="password" required
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               placeholder="Create a strong password">
+                    </div>
+
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                        <input id="confirmPassword" name="confirm_password" type="password" required
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                               placeholder="Confirm your password">
+                    </div>
+
+                    <!-- Security Questions -->
+                    <div class="border-t pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Security Questions</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="securityQuestion1" class="block text-sm font-medium text-gray-700">Security Question 1</label>
+                                <select id="securityQuestion1" name="security_question_1" required
+                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="">Select a security question...</option>
+                                    <option value="What was your first pet's name?">What was your first pet's name?</option>
+                                    <option value="What city were you born in?">What city were you born in?</option>
+                                    <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                    <option value="What was the name of your first school?">What was the name of your first school?</option>
+                                    <option value="What is your favorite movie?">What is your favorite movie?</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="securityAnswer1" class="block text-sm font-medium text-gray-700">Answer 1</label>
+                                <input id="securityAnswer1" name="security_answer_1" type="text" required
+                                       class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                       placeholder="Enter your answer">
+                            </div>
+                            
+                            <div>
+                                <label for="securityQuestion2" class="block text-sm font-medium text-gray-700">Security Question 2</label>
+                                <select id="securityQuestion2" name="security_question_2" required
+                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="">Select a security question...</option>
+                                    <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                                    <option value="What is the name of your favorite teacher?">What is the name of your favorite teacher?</option>
+                                    <option value="What was your first car's make and model?">What was your first car's make and model?</option>
+                                    <option value="What street did you grow up on?">What street did you grow up on?</option>
+                                    <option value="What is your favorite food?">What is your favorite food?</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="securityAnswer2" class="block text-sm font-medium text-gray-700">Answer 2</label>
+                                <input id="securityAnswer2" name="security_answer_2" type="text" required
+                                       class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                       placeholder="Enter your answer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Password Recovery Form -->
+            <div id="recoveryForm" class="bg-white rounded-lg shadow-md p-8 hidden">
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Password Recovery</h3>
+                    <p class="text-sm text-gray-600">Answer your security questions to recover your account</p>
+                </div>
+
+                <!-- Step 1: Enter Customer ID -->
+                <div id="recoveryStep1">
+                    <form id="getSecurityQuestions" class="space-y-6">
+                        <div>
+                            <label for="recoveryCustomerId" class="block text-sm font-medium text-gray-700">Customer ID</label>
+                            <input id="recoveryCustomerId" name="customer_id" type="text" required
+                                   class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                   placeholder="Enter your customer ID">
+                        </div>
+                        
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Get Security Questions
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Answer Security Questions -->
+                <div id="recoveryStep2" class="hidden">
+                    <form id="answerSecurityQuestions" class="space-y-6">
+                        <div id="securityQuestionsDisplay" class="space-y-4">
+                            <!-- Security questions will be displayed here -->
+                        </div>
+                        
+                        <div class="flex space-x-4">
+                            <button type="button" id="backToStep1" class="flex-1 py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Back
+                            </button>
+                            <button type="submit" class="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                Verify & Recover
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <button id="backToLogin" class="text-sm text-blue-600 hover:text-blue-500">
+                        Back to Sign In
+                    </button>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
+            <div id="messageArea" class="hidden">
+                <div id="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 hidden">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-green-800" id="successText"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="errorMessage" class="bg-red-50 border border-red-200 rounded-md p-4 hidden">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-red-800" id="errorText"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const recoveryForm = document.getElementById('recoveryForm');
+
+        loginTab.addEventListener('click', () => {
+            showLoginForm();
+        });
+
+        registerTab.addEventListener('click', () => {
+            showRegisterForm();
+        });
+
+        function showLoginForm() {
+            loginTab.className = 'px-6 py-2 text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm';
+            registerTab.className = 'px-6 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700';
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            recoveryForm.classList.add('hidden');
+        }
+
+        function showRegisterForm() {
+            registerTab.className = 'px-6 py-2 text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm';
+            loginTab.className = 'px-6 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700';
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            recoveryForm.classList.add('hidden');
+        }
+
+        function showRecoveryForm() {
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            recoveryForm.classList.remove('hidden');
+        }
+
+        // Password recovery navigation
+        document.getElementById('forgotPasswordBtn').addEventListener('click', showRecoveryForm);
+        document.getElementById('backToLogin').addEventListener('click', showLoginForm);
+        document.getElementById('backToStep1').addEventListener('click', () => {
+            document.getElementById('recoveryStep1').classList.remove('hidden');
+            document.getElementById('recoveryStep2').classList.add('hidden');
+        });
+
+        // Message display functions
+        function showSuccess(message) {
+            document.getElementById('messageArea').classList.remove('hidden');
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successText').textContent = message;
+        }
+
+        function showError(message) {
+            document.getElementById('messageArea').classList.remove('hidden');
+            document.getElementById('errorMessage').classList.remove('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+            document.getElementById('errorText').textContent = message;
+        }
+
+        function hideMessages() {
+            document.getElementById('messageArea').classList.add('hidden');
+        }
+
+        // Login form submission
+        document.getElementById('loginFormSubmit').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const formData = new FormData(e.target);
+            const data = {
+                customer_id: formData.get('customer_id'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/customer/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Login successful! Redirecting to dashboard...');
+                    // Store customer credentials
+                    sessionStorage.setItem('customer_id', data.customer_id);
+                    sessionStorage.setItem('logged_in', 'true');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    showError(result.detail || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        });
+
+        // Registration form submission
+        document.getElementById('registerFormSubmit').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const formData = new FormData(e.target);
+            
+            // Validate password confirmation
+            if (formData.get('password') !== formData.get('confirm_password')) {
+                showError('Passwords do not match.');
+                return;
+            }
+
+            // Validate security questions are different
+            if (formData.get('security_question_1') === formData.get('security_question_2')) {
+                showError('Please select different security questions.');
+                return;
+            }
+
+            const data = {
+                customer_id: formData.get('customer_id'),
+                password: formData.get('password'),
+                security_question_1: formData.get('security_question_1'),
+                security_answer_1: formData.get('security_answer_1'),
+                security_question_2: formData.get('security_question_2'),
+                security_answer_2: formData.get('security_answer_2')
+            };
+
+            try {
+                const response = await fetch('/api/customer/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Account created successfully! You can now sign in.');
+                    setTimeout(() => {
+                        showLoginForm();
+                        document.getElementById('loginCustomerId').value = data.customer_id;
+                    }, 2000);
+                } else {
+                    showError(result.detail || 'Registration failed. Please try again.');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        });
+
+        // Get security questions
+        document.getElementById('getSecurityQuestions').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const customerId = document.getElementById('recoveryCustomerId').value;
+
+            try {
+                const response = await fetch('/api/customer/security-questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ customer_id: customerId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Display security questions
+                    const questionsDisplay = document.getElementById('securityQuestionsDisplay');
+                    questionsDisplay.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">${result.questions.question_1}</label>
+                            <input id="recoveryAnswer1" type="text" required
+                                   class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                   placeholder="Enter your answer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">${result.questions.question_2}</label>
+                            <input id="recoveryAnswer2" type="text" required
+                                   class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                   placeholder="Enter your answer">
+                        </div>
+                    `;
+                    
+                    document.getElementById('recoveryStep1').classList.add('hidden');
+                    document.getElementById('recoveryStep2').classList.remove('hidden');
+                } else {
+                    showError(result.detail || 'Customer not found.');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        });
+
+        // Answer security questions
+        document.getElementById('answerSecurityQuestions').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const customerId = document.getElementById('recoveryCustomerId').value;
+            const answer1 = document.getElementById('recoveryAnswer1').value;
+            const answer2 = document.getElementById('recoveryAnswer2').value;
+
+            try {
+                const response = await fetch('/api/customer/verify-security', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        customer_id: customerId,
+                        answer_1: answer1,
+                        answer_2: answer2
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.data_deleted) {
+                        showError(result.message);
+                    } else {
+                        showSuccess('Security verification successful! Your account data has been recovered.');
+                        // Store customer info and redirect
+                        sessionStorage.setItem('customer_id', customerId);
+                        sessionStorage.setItem('logged_in', 'true');
+                        
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 2000);
+                    }
+                } else {
+                    showError(result.detail || 'Security verification failed.');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        });
+
+        // Check if already logged in
+        if (sessionStorage.getItem('logged_in') === 'true') {
+            window.location.href = '/dashboard';
+        }
+    </script>
+</body>
+</html>

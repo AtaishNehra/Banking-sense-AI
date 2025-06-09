@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # Main Banking ML API
+  banking-app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Metrics port
+    environment:
+      - PORT=8000
+      - PYTHONPATH=/app
+      - CHATBOT_SERVICE_URL=http://chatbot:8002
+      - DOC_PROCESSOR_URL=http://doc-processor:8003
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+      - ../docs:/app/docs
+    depends_on:
+      - elasticsearch
+      - prometheus
+    networks:
+      - banking-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Chatbot Service
+  chatbot:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["python", "-m", "services.chatbot_service.main"]
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - PYTHONPATH=/app
+    volumes:
+      - ../models:/app/models
+    networks:
+      - banking-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Document Processor Service
+  doc-processor:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: ["python", "-m", "services.doc_processor.main"]
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - PYTHONPATH=/app
+    volumes:
+      - ../data:/app/data
+      - ../docs:/app/docs
+    networks:
+      - banking-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Grafana for Visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboard.json:/var/lib/grafana/dashboards/banking-dashboard.json
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - banking-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    volumes:
+      - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+    depends_on:
+      - elasticsearch
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  # Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - banking-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Filebeat for Log Collection
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    user: root
+    volumes:
+      - ./elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - elasticsearch
+      - logstash
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:

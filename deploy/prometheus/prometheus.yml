@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Banking ML API metrics
+  - job_name: 'banking-api'
+    static_configs:
+      - targets: ['banking-app:8001']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Chatbot service metrics
+  - job_name: 'chatbot-service'
+    static_configs:
+      - targets: ['chatbot:8002']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Document processor metrics
+  - job_name: 'doc-processor'
+    static_configs:
+      - targets: ['doc-processor:8003']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node exporter (if available)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 5s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
